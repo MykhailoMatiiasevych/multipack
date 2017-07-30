@@ -181,5 +181,21 @@ app.get('/remove/:name', (req, res) => {
     res.send(`Error removing config [${name}]`);
   }
 });
+
+// Unfortunately, this implementation can only compile in serial
+app.get('/wait/:secs', (req, res) => {
+  const seconds = (req.params.secs || 10);
+
+  const waitTill = new Date(new Date().getTime() + seconds * 1000);
+  let last = new Date();
+  let i = 0;
+  while(waitTill > new Date()){
+    if (new Date() - last >= 1000) {
+      console.log(`Tick ${++i}`);
+      last = new Date();
+    }
+  }
+  console.log('Wait done!')
+})
 app.listen(8080);
 console.log('http://localhost:8080/pr1/');
