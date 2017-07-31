@@ -34,25 +34,33 @@ module.exports = {
     rules: [
       {
         test: /\.jsx?$/,
-        use: [
-          'babel-loader',
-        ],
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: [
+              ['es2015', {'modules': false}],
+              'stage-0',
+              'react'
+            ],
+            plugins: ['react-hot-loader/babel']
+          }
+        },
         exclude: /node_modules/,
       },
       {
-          test: /\.less$/,
-          use: [
-            'style-loader',
-            {
-              loader: 'css-loader',
-              options: {
-                modules: true,
-                localIdentName: '[name]_[local]-[hash:base64:5]',
-              },
+        test: /\.less$/,
+        use: [
+          'style-loader',
+          {
+            loader: 'css-loader',
+            options: {
+              modules: true,
+              localIdentName: '[name]_[local]-[hash:base64:5]',
             },
-            'less-loader',
-            ],
-        },
+          },
+          'less-loader',
+        ],
+      },
     ],
   },
 
@@ -67,6 +75,15 @@ module.exports = {
     // do not emit compiled assets that include errors
 
   ],
+
+  resolve: {
+    modules: [path.resolve(__dirname, '../node_modules'), 'node_modules'],
+    extensions: [
+      '.js',
+      '.jsx',
+      '.react.js',
+    ]
+  },
 
   // devServer: {
   //   host: 'localhost',

@@ -5,7 +5,8 @@ import CopyWebpackPlugin from 'copy-webpack-plugin';
 import express from 'express';
 import webpackMiddleware from 'webpack-dev-middleware';
 import webpackHotMiddleware from 'webpack-hot-middleware';
-import clone from 'clone';
+import {cloneDeep} from 'lodash';
+import {copyFile, readDirectoryFlat} from './fileManager';
 
 const app = express();
 const middlewareMap = new Map();
@@ -16,7 +17,7 @@ function getProjectPath(name) {
 
 function getWebpackConfig(name) {
   const projectPath = getProjectPath(name);
-  const config = clone(require(`${projectPath}/webpack.config.js`));
+  const config = cloneDeep(require(`${projectPath}/webpack.config.js`));
 
   config.context = `${projectPath}`;
   // add correct entry path
@@ -52,10 +53,10 @@ function getMiddlewareConfig(name) {
     // switch into lazy mode
     // that means no watching, but recompilation on every request
 
-    watchOptions: {
-      aggregateTimeout: 300,
-      poll: true,
-    },
+    // watchOptions: {
+    //   aggregateTimeout: 300,
+    //   poll: true,
+    // },
     // watch options (only lazy: false)
 
     //publicPath: `/${name}`,
@@ -82,7 +83,7 @@ function getMiddlewareConfig(name) {
     stats: {
       colors: true,
     },
-    // options for formating the statistics
+    // options for formatting the statistics
 
     reporter: null,
     // Provide a custom reporter to change the way how logs are shown.
@@ -144,12 +145,14 @@ function removeMiddleware(name) {
 }
 
 function install(name) {
-  console.log(`Installing dependensies for [${name}]`);
-  child_process.execSync('npm install', { cwd: getProjectPath(name) });
+    console.log(`Installing dependencies for ${name}`);
+    child_process.execSync(`yarn install`, { cwd: getProjectPath(name) });
 }
 
-install('pr1');
-addMiddleware('pr1');
+// install('pr1');
+// install('pr2');
+// addMiddleware('pr1');
+// addMiddleware('pr2');
 
 // Trying to to avoid something like 'superProject;rm -rf /'
 function sanitize(name) {
@@ -161,14 +164,18 @@ function sanitize(name) {
 
 app.get('/add/:name', (req, res) => {
   const name = sanitize(req.params.name);
-  try {
-    install(name);
-    addMiddleware(name);
-    res.send(`Build config [${name}] has been added`);
-  } catch (ex) {
-    console.log(ex);
-    res.send(`Error adding config [${name}]`);
-  }
+  console.log(`Creating new project with ${name}`);
+  const projectPath = getProjectPath(name);
+  return copyFile(path.join(__dirname, 'project_template'), projectPath)
+    .then(() => {
+      install(name);
+      addMiddleware(name);
+      res.send(`Build config [${name}] has been added`);
+    })
+    .catch(err => {
+      console.error(ex);
+      res.send(`Error adding config [${name}]`);
+    });
 });
 
 app.get('/remove/:name', (req, res) => {
@@ -196,6 +203,21 @@ app.get('/wait/:secs', (req, res) => {
     }
   }
   console.log('Wait done!')
-})
+});
+
 app.listen(8080);
-console.log('http://localhost:8080/pr1/');
+
+readDirectoryFlat(path.join(__dirname, 'projects'))
+  .then(found => {
+    const {dirs} = found;
+    if (dirs && dirs.length > 0) {
+      dirs.forEach(dir => {
+        install(dir.name);
+        addMiddleware(dir.name);
+      });
+    }
+    console.log('Server has been started. Go to http://localhost:8080/{project}.');
+  })
+  .catch(err => {
+    console.error(err);
+  });

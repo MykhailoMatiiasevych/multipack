@@ -34,11 +34,19 @@ module.exports = {
     rules: [
       {
         test: /\.jsx?$/,
-        use: [
-          'babel-loader',
-        ],
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: [
+              ['es2015', {'modules': false}],
+              'stage-0',
+              'react'
+            ],
+            plugins: ['react-hot-loader/babel']
+          }
+        },
         exclude: /node_modules/,
-      },
+      }
     ],
   },
 
@@ -51,7 +59,17 @@ module.exports = {
 
     new webpack.NoEmitOnErrorsPlugin(),
     // do not emit compiled assets that include errors
+
   ],
+
+  resolve: {
+    modules: [path.resolve(__dirname, '../node_modules'), 'node_modules'],
+    extensions: [
+      '.js',
+      '.jsx',
+      '.react.js',
+    ]
+  },
 
   // devServer: {
   //   host: 'localhost',
