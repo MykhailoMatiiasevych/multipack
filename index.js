@@ -7,6 +7,7 @@ import webpackMiddleware from 'webpack-dev-middleware';
 import webpackHotMiddleware from 'webpack-hot-middleware';
 import {cloneDeep} from 'lodash';
 import {copyFile, readDirectoryFlat} from './fileManager';
+import webpackControlMiddleware from './webpackControlMiddleware';
 
 const app = express();
 const middlewareMap = new Map();
@@ -43,10 +44,10 @@ function getMiddlewareConfig(name) {
   return {
     // publicPath is required, whereas all other options are optional
 
-    noInfo: false,
+    noInfo: true,
     // display no info to console (only warnings and errors)
 
-    quiet: false,
+    quiet: true,
     // display nothing to the console
 
     lazy: false,
@@ -118,6 +119,7 @@ function getMiddlewares(name) {
     log: console.log,
     path: '/__hmr',
   });
+  // let controlMiddleware = webpackControlMiddleware(compiler);
 
   return [wrap(devMiddleware), wrap(hotMiddleware)];
 }
@@ -149,11 +151,6 @@ function install(name) {
     child_process.execSync(`yarn install`, { cwd: getProjectPath(name) });
 }
 
-// install('pr1');
-// install('pr2');
-// addMiddleware('pr1');
-// addMiddleware('pr2');
-
 // Trying to to avoid something like 'superProject;rm -rf /'
 function sanitize(name) {
   if (!name) {
@@ -172,7 +169,7 @@ app.get('/add/:name', (req, res) => {
       addMiddleware(name);
       res.send(`Build config [${name}] has been added`);
     })
-    .catch(err => {
+    .catch(ex => {
       console.error(ex);
       res.send(`Error adding config [${name}]`);
     });
@@ -205,7 +202,29 @@ app.get('/wait/:secs', (req, res) => {
   console.log('Wait done!')
 });
 
-app.listen(8080);
+app.get('/create-bunch', (req, res) => {
+  let sequence = [];
+  for (let x = 0; x < 100; x++) {
+    sequence.push(Promise.resolve().then(() => {
+      const name = `bunched_${x}`;
+      console.time(`Creating project: ${name}`);
+      const projectPath = getProjectPath(name);
+      return copyFile(path.join(__dirname, 'project_template'), projectPath)
+        .then(() => {
+          install(name);
+          addMiddleware(name);
+          console.timeEnd(`Creating project: ${name}`);
+        })
+        .catch(err => {
+          console.error(err);
+          // do nothing
+        });
+    }));
+  }
+  Promise.all(sequence).then(() => {
+    res.send(`Projects have been added`);
+  });
+});
 
 readDirectoryFlat(path.join(__dirname, 'projects'))
   .then(found => {
@@ -216,6 +235,7 @@ readDirectoryFlat(path.join(__dirname, 'projects'))
         addMiddleware(dir.name);
       });
     }
+    app.listen(8080);
     console.log('Server has been started. Go to http://localhost:8080/{project}.');
   })
   .catch(err => {

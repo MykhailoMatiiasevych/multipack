@@ -35,15 +35,7 @@ module.exports = {
       {
         test: /\.jsx?$/,
         use: {
-          loader: 'babel-loader',
-          options: {
-            presets: [
-              ['es2015', {'modules': false}],
-              'stage-0',
-              'react'
-            ],
-            plugins: ['react-hot-loader/babel']
-          }
+          loader: 'babel-loader'
         },
         exclude: /node_modules/,
       },
@@ -95,4 +87,8 @@ module.exports = {
   //   hot: true,
   //   // enable HMR on the server
   // },
+  target: 'web', // Make web variables accessible to webpack, e.g. window
+  performance: {
+    hints: false
+  },
 };

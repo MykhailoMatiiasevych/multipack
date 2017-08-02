@@ -81,4 +81,8 @@ module.exports = {
   //   hot: true,
   //   // enable HMR on the server
   // },
+  target: 'web', // Make web variables accessible to webpack, e.g. window
+  performance: {
+    hints: false
+  },
 };
